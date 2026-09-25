@@ -117,3 +117,8 @@ app.include_router(payments_router, prefix=API_PREFIX)
 @app.get("/", tags=["Health"])
 def health_check():
     return send_response(success=True, message="EVE Healthcare API is running.")
+
+@app.get("/health", tags=["Health"])
+def explicit_health_check():
+    """Explicit health check endpoint for Uptime Robot."""
+    return send_response(success=True, message="EVE Healthcare API is healthy.")
