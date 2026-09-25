@@ -6,7 +6,7 @@ from app.config import settings
 # Engine — mirrors Forehand's db/client.ts (single DB client shared app-wide)
 # ---------------------------------------------------------------------------
 engine = create_engine(
-    settings.DATABASE_URL,
+    settings.get_database_url,
     pool_pre_ping=True,  # keeps connections alive (equivalent to bun-sql's reconnect)
     echo=False,
 )

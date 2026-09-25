@@ -22,7 +22,7 @@ import app.models  # noqa: F401 — registers all tables on Base.metadata
 config = context.config
 
 # Override sqlalchemy.url from our pydantic settings (not from alembic.ini)
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
+config.set_main_option("sqlalchemy.url", settings.get_database_url.replace("%", "%%"))
 
 # Set up logging from alembic.ini
 if config.config_file_name is not None:

@@ -7,6 +7,13 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
 
+    @property
+    def get_database_url(self) -> str:
+        """Ensure SQLAlchemy uses the psycopg2 driver, not psycopg3."""
+        if self.DATABASE_URL.startswith("postgresql://"):
+            return self.DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+        return self.DATABASE_URL
+
     # JWT
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
