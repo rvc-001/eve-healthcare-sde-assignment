@@ -115,10 +115,12 @@ app.include_router(payments_router, prefix=API_PREFIX)
 # Health check — mirrors Forehand's .get("/", () => "Hello World")
 # ---------------------------------------------------------------------------
 @app.get("/", tags=["Health"])
+@app.head("/", tags=["Health"])
 def health_check():
     return send_response(success=True, message="EVE Healthcare API is running.")
 
 @app.get("/health", tags=["Health"])
+@app.head("/health", tags=["Health"])
 def explicit_health_check():
     """Explicit health check endpoint for Uptime Robot."""
     return send_response(success=True, message="EVE Healthcare API is healthy.")
