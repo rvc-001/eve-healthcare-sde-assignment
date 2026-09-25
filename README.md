@@ -1,6 +1,6 @@
 # EVE Healthcare — Diagnostic Test Booking API
 
-A production-ready REST API backend for browsing diagnostic centres, booking tests, and processing payments via an idempotent webhook. Built as the EVE Healthcare SDE Intern assignment.
+A REST API backend for browsing diagnostic centres, booking tests, and processing payments via an idempotent webhook. Built as the EVE Healthcare SDE Intern assignment.
 
 ---
 
@@ -23,7 +23,7 @@ A production-ready REST API backend for browsing diagnostic centres, booking tes
 | Layer              | Technology                      |
 |--------------------|---------------------------------|
 | Framework          | FastAPI (Python 3.12)           |
-| Database           | PostgreSQL (Supabase or Docker) |
+| Database           | PostgreSQL (Supabase)           |
 | ORM                | SQLAlchemy 2.0                  |
 | Migrations         | Alembic                         |
 | Auth               | JWT (python-jose) + Bcrypt      |
@@ -133,8 +133,8 @@ EVE SDE PROJECT/
 
 ## Architecture Decisions
 
-### 1. Clean 3-Layer Architecture
-The codebase is strictly separated into three layers with a single direction of dependency:
+### 1. 3-Layer Architecture
+The codebase is separated into three layers:
 
 ```
 Request → Router (Transport) → Service (Business Logic) → Model (Database)
@@ -142,7 +142,7 @@ Request → Router (Transport) → Service (Business Logic) → Model (Database)
 
 The Router layer has zero business logic. The Service layer has zero HTTP knowledge. This makes each layer independently testable and replaceable.
 
-### 2. Idempotent Webhook (Core Design Decision)
+### 2. Idempotent Webhook
 Payment providers like Stripe guarantee **at-least-once delivery** — the same webhook can fire multiple times on network failure. Our implementation handles this using a two-layer defence:
 
 - **Layer 1 (Application):** On receiving a webhook, we query the `payments` table for the incoming `idempotency_key`. If found, we return `200 OK` immediately without touching the database.
@@ -153,11 +153,11 @@ This guarantees exactly-once processing even under race conditions.
 ### 3. Price Snapshot on Booking
 When a booking is created, the test's current price is copied into the `bookings.amount` column. This is not a foreign key reference to the live price — it is a snapshot. If a centre updates their test price tomorrow, no existing booking record is affected. This is the correct e-commerce pattern for financial data.
 
-### 4. Graceful Caching Fallback
-The `GET /v1/centres/` endpoint uses `@cache(expire=60)` from `fastapi-cache2`. On startup, the application attempts to connect to a Redis backend. If Redis is unavailable (e.g., running locally without Docker), it automatically falls back to an `InMemoryBackend` without crashing. This means the caching code works in both environments.
+### 4. Caching
+The `GET /v1/centres/` endpoint uses `@cache(expire=60)` from `fastapi-cache2`. On startup, the application attempts to connect to a Redis backend. If Redis is unavailable (e.g., running locally without Docker), it uses an `InMemoryBackend`. This means the caching code works in both environments.
 
-### 5. Consistent Response Envelope
-Every single API endpoint returns the same JSON shape:
+### 5. Response Envelope
+Every API endpoint returns the same JSON shape:
 ```json
 {
   "success": true | false,
@@ -216,7 +216,7 @@ payments
 
 ### Prerequisites
 - Python 3.12+
-- A running PostgreSQL instance (Supabase free tier works)
+- A running PostgreSQL instance (Supabase)
 
 ### Installation
 ```bash
