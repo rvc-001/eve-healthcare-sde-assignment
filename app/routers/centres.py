@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.centre import DiagnosticCentreResponse, CentreWithTestsResponse, DiagnosticTestResponse
+from app.schemas.centre import DiagnosticCentreResponse, CentreWithTestsResponse, DiagnosticTestResponse, TestSlotResponse, TestWithSlotsResponse
 from app.services import centre_service
 from app.utils.response import send_response
 
@@ -38,12 +38,17 @@ def get_centre_details(centre_id: str, db: Session = Depends(get_db)):
     )
 
 
-@router.get("/tests/{test_id}", summary="Get diagnostic test details")
+@router.get("/tests/{test_id}", summary="Get diagnostic test details and available slots")
 def get_test_details(test_id: str, db: Session = Depends(get_db)):
-    """Retrieve details for a specific diagnostic test."""
+    """Retrieve details for a specific diagnostic test along with its available time slots."""
     test = centre_service.get_test(db, test_id)
+    slots = centre_service.get_available_slots(db, test_id)
+    
+    test_data = DiagnosticTestResponse.model_validate(test).model_dump()
+    test_data["available_slots"] = [TestSlotResponse.model_validate(s).model_dump() for s in slots]
+    
     return send_response(
         success=True,
-        message="Test details retrieved successfully.",
-        data=DiagnosticTestResponse.model_validate(test).model_dump()
+        message="Test details and slots retrieved successfully.",
+        data=TestWithSlotsResponse.model_validate(test_data).model_dump()
     )

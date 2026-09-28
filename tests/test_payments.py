@@ -1,6 +1,7 @@
 from decimal import Decimal
 import pytest
-from app.models.centre import DiagnosticCentre, DiagnosticTest
+from datetime import datetime
+from app.models.centre import DiagnosticCentre, DiagnosticTest, TestSlot
 from app.models.booking import Booking
 
 
@@ -20,12 +21,22 @@ def dummy_booking(db_session, auth_headers, client):
     db_session.add(test)
     db_session.commit()
     db_session.refresh(test)
+    
+    slot = TestSlot(
+        test_id=test.id,
+        start_time=datetime(2026, 10, 10, 10, 0, 0),
+        end_time=datetime(2026, 10, 10, 10, 45, 0),
+        is_booked=False
+    )
+    db_session.add(slot)
+    db_session.commit()
+    db_session.refresh(slot)
 
     # Create the booking via API
     resp = client.post("/v1/bookings/", headers=auth_headers, json={
         "centre_id": centre.id,
         "test_id": test.id,
-        "appointment_datetime": "2026-10-10T10:00:00Z"
+        "slot_id": slot.id
     })
     
     booking_id = resp.json()["data"]["id"]

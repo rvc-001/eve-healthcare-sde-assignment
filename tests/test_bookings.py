@@ -1,6 +1,7 @@
 from decimal import Decimal
 import pytest
-from app.models.centre import DiagnosticCentre, DiagnosticTest
+from datetime import datetime
+from app.models.centre import DiagnosticCentre, DiagnosticTest, TestSlot
 
 
 @pytest.fixture
@@ -20,16 +21,26 @@ def seed_centre_and_test(db_session):
     db_session.commit()
     db_session.refresh(test)
     
-    return centre, test
+    slot = TestSlot(
+        test_id=test.id,
+        start_time=datetime(2026, 10, 10, 10, 0, 0),
+        end_time=datetime(2026, 10, 10, 10, 45, 0),
+        is_booked=False
+    )
+    db_session.add(slot)
+    db_session.commit()
+    db_session.refresh(slot)
+    
+    return centre, test, slot
 
 
 def test_create_booking_success(client, auth_headers, seed_centre_and_test):
-    centre, test = seed_centre_and_test
+    centre, test, slot = seed_centre_and_test
     
     response = client.post("/v1/bookings/", headers=auth_headers, json={
         "centre_id": centre.id,
         "test_id": test.id,
-        "appointment_datetime": "2026-10-10T10:00:00Z"
+        "slot_id": slot.id
     })
     
     assert response.status_code == 201
@@ -39,12 +50,12 @@ def test_create_booking_success(client, auth_headers, seed_centre_and_test):
 
 
 def test_create_booking_invalid_test(client, auth_headers, seed_centre_and_test):
-    centre, _ = seed_centre_and_test
+    centre, _, slot = seed_centre_and_test
     
     response = client.post("/v1/bookings/", headers=auth_headers, json={
         "centre_id": centre.id,
         "test_id": "invalid-uuid",
-        "appointment_datetime": "2026-10-10T10:00:00Z"
+        "slot_id": slot.id
     })
     
     assert response.status_code == 404
@@ -52,13 +63,13 @@ def test_create_booking_invalid_test(client, auth_headers, seed_centre_and_test)
 
 
 def test_cancel_booking(client, auth_headers, seed_centre_and_test):
-    centre, test = seed_centre_and_test
+    centre, test, slot = seed_centre_and_test
     
     # Create booking
     create_resp = client.post("/v1/bookings/", headers=auth_headers, json={
         "centre_id": centre.id,
         "test_id": test.id,
-        "appointment_datetime": "2026-10-10T10:00:00Z"
+        "slot_id": slot.id
     })
     booking_id = create_resp.json()["data"]["id"]
     

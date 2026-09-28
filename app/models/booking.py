@@ -40,6 +40,12 @@ class Booking(Base):
         nullable=False,
         index=True,
     )
+    slot_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("test_slots.id", ondelete="RESTRICT"),
+        nullable=True, # make it True for now for backward compatibility with existing data
+        index=True,
+    )
 
     appointment_datetime: Mapped[object] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -63,6 +69,7 @@ class Booking(Base):
     user: Mapped["User"] = relationship("User", back_populates="bookings", lazy="noload")  # type: ignore[name-defined]
     test: Mapped["DiagnosticTest"] = relationship("DiagnosticTest", back_populates="bookings", lazy="noload")  # type: ignore[name-defined]
     centre: Mapped["DiagnosticCentre"] = relationship("DiagnosticCentre", back_populates="bookings", lazy="noload")  # type: ignore[name-defined]
+    slot: Mapped["TestSlot"] = relationship("TestSlot", lazy="noload")  # type: ignore[name-defined]
     payment: Mapped["Payment"] = relationship("Payment", back_populates="booking", uselist=False, lazy="noload")  # type: ignore[name-defined]
 
     def __repr__(self) -> str:

@@ -31,3 +31,14 @@ def get_test(db: Session, test_id: str) -> DiagnosticTest:
     if not test:
         raise HTTPException(status_code=404, detail="Diagnostic test not found")
     return test
+
+
+def get_available_slots(db: Session, test_id: str):
+    """Get available slots for a given test."""
+    from app.models.centre import TestSlot
+    test = get_test(db, test_id)
+    slots = db.query(TestSlot).filter(
+        TestSlot.test_id == test_id,
+        TestSlot.is_booked == False
+    ).order_by(TestSlot.start_time.asc()).all()
+    return slots

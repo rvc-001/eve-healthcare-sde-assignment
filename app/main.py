@@ -51,10 +51,10 @@ async def lifespan(app: FastAPI):
         redis = aioredis.from_url("redis://redis:6379", encoding="utf8", decode_responses=True)
         # Quick ping to test connection
         await redis.ping()
-        FastAPICache.init(RedisBackend(redis), prefix="eve-cache")
+        FastAPICache.init(RedisBackend(redis), prefix="api-cache")
         print("🚀 Cache initialized with Redis backend.")
     except Exception:
-        FastAPICache.init(InMemoryBackend(), prefix="eve-cache")
+        FastAPICache.init(InMemoryBackend(), prefix="api-cache")
         print("🚀 Cache initialized with InMemory fallback (Redis not found).")
         
     yield
@@ -65,10 +65,10 @@ async def lifespan(app: FastAPI):
 # App instance — mirrors Forehand's new Elysia() with metadata for Swagger UI
 # ---------------------------------------------------------------------------
 app = FastAPI(
-    title="EVE Healthcare API",
+    title="Test Center Booking API",
     description=(
         "Backend service for diagnostic test bookings and simulated payments. "
-        "Built for the EVE Healthcare SDE Intern assignment."
+        "API for booking diagnostic tests."
     ),
     version="1.0.0",
     docs_url="/docs",      # Swagger UI
@@ -117,10 +117,10 @@ app.include_router(payments_router, prefix=API_PREFIX)
 @app.get("/", tags=["Health"])
 @app.head("/", tags=["Health"])
 def health_check():
-    return send_response(success=True, message="EVE Healthcare API is running.")
+    return send_response(success=True, message="Test Center Booking API is running.")
 
 @app.get("/health", tags=["Health"])
 @app.head("/health", tags=["Health"])
 def explicit_health_check():
     """Explicit health check endpoint for Uptime Robot."""
-    return send_response(success=True, message="EVE Healthcare API is healthy.")
+    return send_response(success=True, message="Test Center Booking API is healthy.")

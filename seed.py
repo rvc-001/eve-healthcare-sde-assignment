@@ -9,9 +9,10 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from decimal import Decimal
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.models.centre import DiagnosticCentre, DiagnosticTest
+from app.models.centre import DiagnosticCentre, DiagnosticTest, TestSlot
 
 
 def seed_data():
@@ -20,7 +21,7 @@ def seed_data():
     # Centres data (Raipur, Bhilai, Durg - CG)
     centres_data = [
         {
-            "name": "EVE Healthcare Diagnostic Hub",
+            "name": "Main Diagnostic Hub",
             "location": "GE Road, Raipur, CG",
             "tests": [
                 {"name": "Complete Blood Count (CBC)", "description": "Measures different features of your blood.", "price": Decimal("350.00")},
@@ -68,10 +69,38 @@ def seed_data():
                     price=test_info["price"]
                 )
                 db.add(test)
+                db.commit()
+                db.refresh(test)
+                
+                # Generate 3 dummy slots for each test
+                base_time = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=1)
+                for i in range(3):
+                    slot = TestSlot(
+                        test_id=test.id,
+                        start_time=base_time + timedelta(hours=i),
+                        end_time=base_time + timedelta(hours=i, minutes=45),
+                        is_booked=False
+                    )
+                    db.add(slot)
+            
             db.commit()
-            print(f"  └ Added {len(centre_info['tests'])} tests.")
+            print(f"  └ Added {len(centre_info['tests'])} tests with time slots.")
         else:
-            print(f"Centre '{centre_info['name']}' already exists, skipping.")
+            print(f"Centre '{centre_info['name']}' already exists, checking for missing slots.")
+            tests = db.query(DiagnosticTest).filter(DiagnosticTest.centre_id == existing_centre.id).all()
+            for test in tests:
+                slots_count = db.query(TestSlot).filter(TestSlot.test_id == test.id).count()
+                if slots_count == 0:
+                    base_time = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=1)
+                    for i in range(3):
+                        slot = TestSlot(
+                            test_id=test.id,
+                            start_time=base_time + timedelta(hours=i),
+                            end_time=base_time + timedelta(hours=i, minutes=45),
+                            is_booked=False
+                        )
+                        db.add(slot)
+            db.commit()
 
     db.close()
     print("✅ Seed complete!")

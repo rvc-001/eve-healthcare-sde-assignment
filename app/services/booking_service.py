@@ -26,6 +26,19 @@ def create_booking(db: Session, user_id: str, payload: BookingCreateRequest) -> 
     if test.centre_id != centre.id:
         raise HTTPException(status_code=400, detail="This test is not offered at the selected centre")
 
+    # Validate Slot
+    from app.models.centre import TestSlot
+    slot = db.query(TestSlot).filter(TestSlot.id == payload.slot_id).first()
+    if not slot:
+        raise HTTPException(status_code=404, detail="Test slot not found")
+    if slot.test_id != test.id:
+        raise HTTPException(status_code=400, detail="Slot does not belong to the selected test")
+    if slot.is_booked:
+        raise HTTPException(status_code=400, detail="This slot is already booked")
+
+    # Mark slot as booked
+    slot.is_booked = True
+
     # Snapshot the price
     amount = test.price
 
@@ -33,7 +46,8 @@ def create_booking(db: Session, user_id: str, payload: BookingCreateRequest) -> 
         user_id=user_id,
         test_id=test.id,
         centre_id=centre.id,
-        appointment_datetime=payload.appointment_datetime,
+        slot_id=slot.id,
+        appointment_datetime=slot.start_time,
         amount=amount,
         status=BookingStatusEnum.PENDING,
     )
@@ -61,6 +75,14 @@ def cancel_booking(db: Session, user_id: str, booking_id: str) -> Booking:
         raise HTTPException(status_code=400, detail=f"Cannot cancel booking with status {booking.status.value}")
 
     booking.status = BookingStatusEnum.CANCELLED
+    
+    # Free up the slot if it's linked
+    from app.models.centre import TestSlot
+    if booking.slot_id:
+        slot = db.query(TestSlot).filter(TestSlot.id == booking.slot_id).first()
+        if slot:
+            slot.is_booked = False
+
     db.commit()
     db.refresh(booking)
     return booking

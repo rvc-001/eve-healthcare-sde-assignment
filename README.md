@@ -1,6 +1,6 @@
-# EVE Healthcare — Diagnostic Test Booking API
+# Diagnostic Test Booking API
 
-A REST API backend for browsing diagnostic centres, booking tests, and processing payments via an idempotent webhook. Built as the EVE Healthcare SDE Intern assignment.
+A REST API backend for browsing diagnostic centres, booking tests, and processing payments via an idempotent webhook.
 
 ---
 
@@ -36,7 +36,7 @@ A REST API backend for browsing diagnostic centres, booking tests, and processin
 ## Project Structure
 
 ```
-EVE SDE PROJECT/
+PROJECT/
 │
 ├── app/                             # Core application package
 │   ├── models/                      # SQLAlchemy table definitions (Database layer)
@@ -110,11 +110,11 @@ EVE SDE PROJECT/
 | GET    | /v1/auth/me     | Yes           | Get the currently authenticated user   |
 
 ### Diagnostic Centres
-| Method | Endpoint                 | Auth Required | Description                                      |
-|--------|--------------------------|:-------------:|--------------------------------------------------|
-| GET    | /v1/centres/             | No            | List all diagnostic centres (cached 60s)         |
-| GET    | /v1/centres/{id}         | No            | Get a centre with all its offered tests          |
-| GET    | /v1/centres/tests/{id}   | No            | Get details and price of a specific test         |
+| Method | Endpoint                       | Auth Required | Description                                      |
+|--------|--------------------------------|:-------------:|--------------------------------------------------|
+| GET    | /v1/centres/                   | No            | List all diagnostic centres (cached 60s)         |
+| GET    | /v1/centres/{id}               | No            | Get a centre with all its offered tests          |
+| GET    | /v1/centres/tests/{id}         | No            | Get details, price, and available slots of a test|
 
 ### Bookings
 | Method | Endpoint                     | Auth Required | Description                                            |
@@ -191,11 +191,19 @@ diagnostic_tests
   price (NUMERIC 10,2)
   created_at, updated_at
 
+test_slots
+  id (PK, UUID)
+  test_id (FK -> diagnostic_tests.id ON DELETE CASCADE)
+  start_time, end_time
+  is_booked (BOOLEAN)
+  created_at, updated_at
+
 bookings
   id (PK, UUID)
   user_id (FK -> users.id ON DELETE CASCADE)
   test_id (FK -> diagnostic_tests.id ON DELETE RESTRICT)
   centre_id (FK -> diagnostic_centres.id ON DELETE RESTRICT)
+  slot_id (FK -> test_slots.id ON DELETE RESTRICT)
   appointment_datetime
   amount (NUMERIC 10,2)   ← price snapshot at time of booking
   status (ENUM: PENDING | CONFIRMED | CANCELLED | FAILED)
